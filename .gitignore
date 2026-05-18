@@ -3,3 +3,4 @@ raw-data/
 .env
 .cache/
 
+__pycache__/
