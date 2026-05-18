@@ -1,4 +1,5 @@
 raw-data/
 .venv/
 .env
+.cache/
 

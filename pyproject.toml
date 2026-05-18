@@ -1,9 +1,8 @@
 [project]
 name = "hr-chatbot"
 version = "0.1.0"
-description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11, <3.13"
 dependencies = [
      "fastapi>=0.115.0",
      "uvicorn[standard]>=0.30.0",
@@ -14,4 +13,29 @@ dependencies = [
      "pypdf>=5.0.0",
      "python-docx>=1.1.2",
      "pydantic>=2.13.4",
+     "kreuzberg>=4.9.7",
+     "mineru-vl-utils[transformers]>=0.1.0",
+     "pymupdf>=1.24.0",
+     "pillow>=10.0.0",
+     # Cập nhật yêu cầu tối thiểu lên 2.6.0 cho khớp với MinerU
+     "torch>=2.6.0",
+     "torchvision",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]
+
+# ==========================================
+# CẤU HÌNH NGUỒN TẢI PYTORCH CUDA 12.4
+# ==========================================
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu124" }
+torchvision = { index = "pytorch-cu124" }
+torchaudio = { index = "pytorch-cu124" }
