@@ -92,37 +92,7 @@ torchvision = { index = "pytorch-cu124" }
 torchaudio = { index = "pytorch-cu124" }
 ```
 
-### Code pattern hiện tại
 
-Loader PDF trong `source/ingestion/loaders.py` làm theo luồng:
-
-```text
-PDF page -> PyMuPDF render image -> MinerUClient.two_step_extract -> json2md -> LangChain Document
-```
-
-Model:
-
-```python
-Qwen2VLForConditionalGeneration.from_pretrained(
-    "opendatalab/MinerU2.5-Pro-2604-1.2B",
-    dtype="auto",
-    device_map="auto",
-)
-```
-
-Render page:
-
-```python
-pix = page.get_pixmap(dpi=200)
-img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-```
-
-Extract:
-
-```python
-content_list = client.two_step_extract(img)
-md_page = json2md(content_list)
-```
 
 ### Lỗi đã gặp
 
@@ -132,9 +102,51 @@ md_page = json2md(content_list)
 - Torch CPU làm `torch.cuda.is_available()` trả `False`.
 - Test thật MinerU2.5-Pro cần tải model từ Hugging Face. Nếu network/sandbox chặn sẽ fail ở bước tải `config.json`.
 
-### Hướng tiếp theo
+## 18-05
 
-- Ổn định CUDA/PyTorch trước khi parse toàn bộ PDF.
-- Test từng PDF một.
-- Sau khi MinerU parse ổn, nên cache Markdown/JSON output để không chạy VLM lại mỗi lần ingest.
-- Về lâu dài, MinerU nên là preprocessing job offline, không chạy trực tiếp trong request FastAPI.
+## 18/05 - Indexing, Vector Store, Chunking, Retrieval
+
+- Chunking dùng LangChain `Document` làm object chuẩn, sau đó chia 2 lớp:
+  - `MarkdownHeaderTextSplitter` cắt theo cấu trúc heading `#`, `##`, `###`, `####`.
+  - `RecursiveCharacterTextSplitter` cắt tiếp các đoạn quá dài với `chunk_size=1000`, `chunk_overlap=150`.
+- Mỗi chunk được bơm thêm ngữ cảnh vào đầu text:
+  - tên tài liệu
+  - đường dẫn heading dạng `h1 > h2 > h3`
+  - giúp embedding/retrieval hiểu chunk đang thuộc mục nào.
+- Metadata được chuẩn hóa bằng Pydantic `ChunkMetadata`, gồm:
+  - `document_id`
+  - `chunk_id`
+  - `source_file`
+  - `file_type`
+  - `page`
+  - `chunk_index`
+  - `content_hash`
+  - `parser`
+  - `block_type`
+  - `category`
+- `content_hash`, `document_id`, `chunk_id` dùng SHA-256 để định danh nội dung ổn định, phục vụ reindex/dedupe về sau.
+- Vector store dùng:
+  - `OpenAIEmbeddings`
+  - model lấy từ `OPENAI_EMBEDDING_MODEL`, mặc định `text-embedding-3-small`
+  - `QdrantClient`
+  - `QdrantVectorStore`
+- Collection Qdrant hiện dùng tên `hr_policies_openai`.
+- Khi collection chưa tồn tại, code gọi thử `embeddings.embed_query("Test")` để tự nhận diện vector dimension, rồi tạo collection với `Distance.COSINE`.
+- Indexing flow:
+  - nhận list chunks
+  - init Qdrant collection nếu cần
+  - gọi `vector_store.add_documents(documents=chunks)`
+  - LangChain tự embed bằng OpenAI API và upsert vào Qdrant.
+- Retrieval flow:
+  - dùng cùng `OpenAIEmbeddings` và cùng collection Qdrant
+  - gọi `similarity_search_with_score(query, k=top_k)`
+  - hỗ trợ filter theo `metadata.source_file` bằng Qdrant `FieldCondition`
+  - kết quả trả về dạng `(Document, score)`.
+- Chat generation flow:
+  - `stream_hr_chatbot()` gọi retrieval trước với `top_k=4`
+  - format các retrieved chunks thành context block có source
+  - dùng `ChatPromptTemplate` từ `system_prompt_v1.xml`
+  - gọi `ChatOpenAI` với model từ `OPENAI_CHAT_MODEL`, `temperature=0.1`
+  - stream từng phần câu trả lời về UI/API.
+
+### Tiếp theo, tích hợp memory. 
