@@ -1,6 +1,8 @@
-from fastapi import FastAPI, HTTPException, status
+import secrets
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel, Field, field_validator
 from typing import Generator
 
@@ -19,6 +21,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+security = HTTPBasic()
+
+
+def verify_credentials(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_username = secrets.compare_digest(credentials.username, settings.API_USERNAME)
+    correct_password = secrets.compare_digest(credentials.password, settings.API_PASSWORD)
+
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Basic"},
+        )
 
 
 class ChatRequest(BaseModel):
@@ -47,11 +63,23 @@ def health():
     }
 
 
+@app.get(
+    "/api/v1/auth/verify",
+    tags=["Auth"],
+    summary="Xác thực",
+    description="Kiểm tra credentials có hợp lệ",
+    dependencies=[Depends(verify_credentials)]
+)
+def verify():
+    return {"status": "authenticated"}
+
+
 @app.post(
     "/api/v1/chat/stream",
     tags=["Chat"],
     summary="Chat với Bot (Streaming)",
-    description="Nhận câu hỏi và trả lời theo thời gian thực"
+    description="Nhận câu hỏi và trả lời theo thời gian thực",
+    dependencies=[Depends(verify_credentials)]
 )
 async def chat_stream(request: ChatRequest):
     def generate() -> Generator[str, None, None]:

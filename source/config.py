@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -6,14 +7,15 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     HOST: str = "0.0.0.0"
     PORT: int = 8000
-    OPENAI_API_KEY: str 
+    OPENAI_API_KEY: str
     OPENAI_LLM_MODEL: str = "gpt-4o"
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
-
     QDRANT_URL: str = "http://localhost:6333"
     COLLECTION_NAME: str = "hr_policies_openai"
 
     MAX_CHAT_HISTORY_MESSAGES: int = 6 
+    API_USERNAME: str
+    API_PASSWORD: str
 
     model_config = SettingsConfigDict(
         env_file=".env",

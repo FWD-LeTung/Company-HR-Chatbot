@@ -1,6 +1,7 @@
 // Configuration
 const API_URL = 'http://localhost:8000/api/v1/chat/stream';
 const SESSION_STORAGE_KEY = 'hr_chatbot_session_id';
+const CREDENTIALS_KEY = 'hr_chatbot_credentials';
 
 // State
 let currentSessionId = getStoredSessionId();
@@ -18,6 +19,21 @@ const themeLabel = document.getElementById('themeLabel');
 const menuToggle = document.getElementById('menuToggle');
 const sidebar = document.getElementById('sidebar');
 const newChatBtn = document.getElementById('newChatBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+
+// Credentials Management
+function getCredentials() {
+    return localStorage.getItem(CREDENTIALS_KEY);
+}
+
+function clearCredentials() {
+    localStorage.removeItem(CREDENTIALS_KEY);
+}
+
+function handleLogout() {
+    clearCredentials();
+    window.location.href = 'login.html';
+}
 
 // Session Management
 function getStoredSessionId() {
@@ -136,10 +152,17 @@ async function sendMessage() {
 
         currentController = new AbortController();
 
+        const credentials = getCredentials();
+        if (!credentials) {
+            window.location.href = 'login.html';
+            return;
+        }
+
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Basic ${credentials}`,
             },
             body: JSON.stringify({
                 message: message,
@@ -147,6 +170,11 @@ async function sendMessage() {
             }),
             signal: currentController.signal,
         });
+
+        if (response.status === 401) {
+            handleLogout();
+            return;
+        }
 
         if (!response.ok) {
             throw new Error('Không thể kết nối đến máy chủ');
@@ -207,6 +235,7 @@ sendBtn.addEventListener('click', sendMessage);
 stopBtn.addEventListener('click', stopStreaming);
 themeToggle.addEventListener('click', toggleTheme);
 newChatBtn.addEventListener('click', createNewChat);
+logoutBtn.addEventListener('click', handleLogout);
 
 menuToggle.addEventListener('click', () => {
     sidebar.classList.toggle('open');
@@ -235,6 +264,12 @@ function autoResizeTextarea() {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    // Check authentication
+    if (!getCredentials()) {
+        window.location.href = 'login.html';
+        return;
+    }
+
     initTheme();
     messageInput.focus();
 });
