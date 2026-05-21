@@ -12,14 +12,13 @@ from mineru_vl_utils import MinerUClient
 from mineru_vl_utils.post_process import json2md
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from source.ingestion.excel_loader import process_excel_polars
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
-SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".md", ".xlsx"]
+SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".md"]
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"[System] Khởi tạo Pipeline thành công. Thiết bị xử lý MinerU VLM: {DEVICE.upper()}")
@@ -148,8 +147,6 @@ def load_file(path: Path) -> list[Document]:
         return process_text_kreuzberg(path)
     if ext == ".md":
         return process_markdown(path)
-    if ext == ".xlsx":
-        return process_excel_polars(path)
 
     print(f"  -> Bỏ qua định dạng không hỗ trợ: {path.name}")
     return []

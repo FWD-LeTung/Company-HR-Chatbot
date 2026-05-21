@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel, Field, field_validator
-from typing import Generator
+from typing import AsyncGenerator
 
 from source.config import settings
 from source.generation.chat_engine import stream_hr_chatbot
@@ -82,8 +82,8 @@ def verify():
     dependencies=[Depends(verify_credentials)]
 )
 async def chat_stream(request: ChatRequest):
-    def generate() -> Generator[str, None, None]:
-        for chunk in stream_hr_chatbot(user_query=request.message, session_id=request.session_id):
+    async def generate() -> AsyncGenerator[str, None]:
+        async for chunk in stream_hr_chatbot(user_query=request.message, session_id=request.session_id):
             yield chunk
 
     return StreamingResponse(

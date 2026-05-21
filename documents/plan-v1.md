@@ -31,6 +31,8 @@
 * ✅ **Giao diện Chat Web:** Xây dựng trang HTML/JS tĩnh đơn giản, có khả năng render Markdown, Streaming và hiển thị Citations.
 * ✅ **Bảo mật cơ bản:** Thêm Basic Auth (Username/Password) vào API để bảo vệ dữ liệu khi public nghiệm thu.
 
+
+
 ## Giai đoạn 5: Deploy & Monitoring (Triển khai & Giám sát)
 *Mục tiêu: Đưa ứng dụng lên môi trường Cloud để người dùng thực tế có thể test.*
 * 📝 **Chuyển đổi DB:** Tạo Cluster trên Qdrant Cloud và đẩy dữ liệu (Index) lên bản Cloud.

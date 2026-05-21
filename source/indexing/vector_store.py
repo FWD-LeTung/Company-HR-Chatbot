@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 from langchain_core.documents import Document
@@ -11,7 +12,8 @@ from source.config import settings
 
 print(f"[System] Khởi tạo OpenAI Embeddings với model: {settings.OPENAI_EMBEDDING_MODEL}")
 
-embeddings = OpenAIEmbeddings(model=settings.OPENAI_EMBEDDING_MODEL)
+embeddings = OpenAIEmbeddings(model=settings.OPENAI_EMBEDDING_MODEL,
+                              api_key=settings.OPENAI_API_KEY)
 client = QdrantClient(url=settings.QDRANT_URL)
 
 
