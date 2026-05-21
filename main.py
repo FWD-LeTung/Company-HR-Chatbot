@@ -79,11 +79,15 @@ def verify():
     tags=["Chat"],
     summary="Chat với Bot (Streaming)",
     description="Nhận câu hỏi và trả lời theo thời gian thực",
-    dependencies=[Depends(verify_credentials)]
 )
-async def chat_stream(request: ChatRequest):
+async def chat_stream(request: ChatRequest, credentials: HTTPBasicCredentials = Depends(security)):
+    verify_credentials(credentials)
     async def generate() -> AsyncGenerator[str, None]:
-        async for chunk in stream_hr_chatbot(user_query=request.message, session_id=request.session_id):
+        async for chunk in stream_hr_chatbot(
+            user_query=request.message,
+            session_id=request.session_id,
+            user_id=credentials.username,
+        ):
             yield chunk
 
     return StreamingResponse(

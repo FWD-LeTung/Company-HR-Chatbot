@@ -12,7 +12,8 @@ from source.config import settings
 embeddings = OpenAIEmbeddings(model=settings.OPENAI_EMBEDDING_MODEL,
                               api_key=settings.OPENAI_API_KEY
                               )
-client = QdrantClient(url=settings.QDRANT_URL)
+client = QdrantClient(url=settings.QDRANT_URL,
+                      api_key=settings.QDRANT_API_KEY)
 vector_store = QdrantVectorStore(
     client=client,
     collection_name=settings.COLLECTION_NAME,

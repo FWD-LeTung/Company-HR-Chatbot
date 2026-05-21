@@ -10,12 +10,16 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     OPENAI_LLM_MODEL: str = "gpt-4o"
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
-    QDRANT_URL: str = "http://localhost:6333"
+    QDRANT_URL: str
     COLLECTION_NAME: str = "hr_policies_openai"
 
     MAX_CHAT_HISTORY_MESSAGES: int = 6 
     API_USERNAME: str
     API_PASSWORD: str
+    QDRANT_API_KEY: str
+    LANGFUSE_SECRET_KEY: str = ""
+    LANGFUSE_PUBLIC_KEY: str = ""
+    LANGFUSE_BASE_URL: str = "https://cloud.langfuse.com"
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -15,6 +15,14 @@ from source.retrieval.search_engine import search_hr_policies
 from source.retrieval.excel_reader import search_employee_with_endswith
 from source.config import settings
 
+from langfuse.langchain import CallbackHandler
+
+os.environ.setdefault("LANGFUSE_PUBLIC_KEY", settings.LANGFUSE_PUBLIC_KEY)
+os.environ.setdefault("LANGFUSE_SECRET_KEY", settings.LANGFUSE_SECRET_KEY)
+os.environ.setdefault("LANGFUSE_HOST", settings.LANGFUSE_BASE_URL)
+
+langfuse_handler = CallbackHandler()
+
 llm = ChatOpenAI(
     model=settings.OPENAI_LLM_MODEL,
     api_key=settings.OPENAI_API_KEY,
@@ -71,7 +79,19 @@ agent_graph = create_agent(
 )
 
 
-async def stream_hr_chatbot(user_query: str, session_id: str = "default"):
+def _get_trace_config(session_id: str, user_id: str | None = None):
+    handler = CallbackHandler()
+    metadata = {
+        "langfuse_trace_name": "hr-chatbot-chat",
+        "langfuse_session_id": session_id,
+        "langfuse_tags": ["hr-chatbot"],
+    }
+    if user_id:
+        metadata["langfuse_user_id"] = user_id
+    return handler, metadata
+
+
+async def stream_hr_chatbot(user_query: str, session_id: str = "default", user_id: str | None = None):
     history = get_session_history(session_id)
     messages = history.messages
 
@@ -89,9 +109,12 @@ async def stream_hr_chatbot(user_query: str, session_id: str = "default"):
 
     input_messages = chat_history + [HumanMessage(content=user_query)]
 
+    trace_handler, trace_metadata = _get_trace_config(session_id, user_id)
+
     async for event in agent_graph.astream_events(
         {"messages": input_messages},
         version="v2",
+        config={"callbacks": [trace_handler], "metadata": trace_metadata},
     ):
         kind = event["event"]
         if kind == "on_chat_model_stream":
@@ -99,4 +122,5 @@ async def stream_hr_chatbot(user_query: str, session_id: str = "default"):
             if content:
                 yield content
 
+    trace_handler._langfuse_client.flush()
     history.add_user_message(user_query)
