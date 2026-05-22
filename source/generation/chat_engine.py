@@ -9,6 +9,7 @@ from langchain.agents import create_agent
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.messages import HumanMessage, AIMessage
 from pydantic import BaseModel, Field
+from typing import Optional
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from source.retrieval.search_engine import search_hr_policies
@@ -41,23 +42,43 @@ def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
 
 
 class TraCuuDanhBaInput(BaseModel):
-    ten_nhan_vien: str = Field(..., description="Tên nhân viên cần tìm kiếm")
+    ten_nhan_vien: str = Field(
+        ..., 
+        description="Tên của nhân viên cần tìm kiếm. Lưu ý: Cần trích xuất đầy đủ tên chính có nghĩa (ví dụ: lấy 'Trang Anh', 'Đức Anh' thay vì chỉ lấy từ cuối cùng là 'Anh') để kết quả tự nhiên và chính xác nhất."
+    )
+    
+    chuc_danh: Optional[str] = Field(
+        None, 
+        description="Chức danh hoặc vị trí công việc của nhân viên (ví dụ: 'Kỹ sư hệ thống', 'Chuyên viên kinh doanh', 'Trưởng nhóm'). Bỏ trống nếu không rõ."
+    )
 
 
 @tool("tra_cuu_danh_ba", args_schema=TraCuuDanhBaInput)
-def tra_cuu_danh_ba(ten_nhan_vien: str) -> str:
+def tra_cuu_danh_ba(ten_nhan_vien: str, chuc_danh: Optional[str] = None) -> str:
     """Tìm kiếm thông tin nhân viên từ danh bạ (Excel)."""
-    return search_employee_with_endswith(ten_nhan_vien)
+    return search_employee_with_endswith(
+        ten_nhan_vien=ten_nhan_vien, 
+        chuc_danh=chuc_danh
+    )
 
 
 class TraCuuChinhSachInput(BaseModel):
-    query: str = Field(..., description="Câu hỏi về chính sách cần tra cứu")
+    query: str = Field(..., description="Từ khóa hoặc nội dung câu hỏi về chính sách cần tra cứu. Cần được rút gọn và tập trung vào ý chính (ví dụ: 'quy định nghỉ phép năm', 'chế độ thai sản').")
+    source_file_filter: Optional[str] = Field(None, description="Tên file tài liệu nếu người dùng có chỉ định cụ thể nguồn cần tra cứu (ví dụ: 'So_tay_nhan_vien_2024.pdf', 'Quy_dinh_nhan_su'). Bỏ trống nếu không nhắc đến.")
+    category_filter: Optional[str] = Field(None, description="Danh mục của chính sách nếu có thể phân loại được. Bỏ trống nếu không xác định.")
 
 
 @tool("tra_cuu_chinh_sach", args_schema=TraCuuChinhSachInput)
-def tra_cuu_chinh_sach(query: str) -> str:
-    """Tìm kiếm thông tin chính sách từ cơ sở kiến thức (Qdrant Vector DB)."""
-    search_results = search_hr_policies(query=query, top_k=3)
+def tra_cuu_chinh_sach(query: str, source_file_filter: Optional[str] = None, category_filter: Optional[str] = None) -> str:
+    """Tìm kiếm các quy định, chế độ, và chính sách nhân sự của công ty từ cơ sở tri thức (Vector DB)."""
+    
+    # Truyền thêm các bộ lọc vào hàm search_hr_policies
+    search_results = search_hr_policies(
+        query=query, 
+        top_k=3,
+        source_file_filter=source_file_filter,
+        category_filter=category_filter
+    )
 
     if not search_results:
         return "Không tìm thấy tài liệu nào liên quan đến câu hỏi của bạn."
