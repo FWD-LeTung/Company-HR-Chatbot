@@ -104,26 +104,25 @@ function addMessage(role, content) {
 
 function addStreamingMessage() {
     const messageDiv = document.createElement('div');
-    messageDiv.className = 'message assistant';
-    messageDiv.id = 'streaming-message';
+    messageDiv.className = 'message assistant streaming';
+    messageDiv.style.display = 'none';
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
-    contentDiv.textContent = '';
 
     messageDiv.appendChild(contentDiv);
     chatMessages.appendChild(messageDiv);
 
-    return contentDiv;
+    return { messageDiv, contentDiv };
 }
 
 function updateStreamingMessage(contentDiv, chunk) {
     contentDiv.textContent += chunk;
-    scrollToBottom();
 }
 
-function finalizeStreamingMessage(contentDiv, fullContent) {
+function finalizeStreamingMessage(messageDiv, contentDiv, fullContent) {
     contentDiv.innerHTML = marked.parse(fullContent);
+    messageDiv.style.display = '';
     scrollToBottom();
 }
 
@@ -147,7 +146,7 @@ async function sendMessage() {
     stopBtn.style.display = 'flex';
 
     try {
-        const streamingContent = addStreamingMessage();
+        const { messageDiv: streamingDiv, contentDiv: streamingContent } = addStreamingMessage();
         let fullResponse = '';
 
         currentController = new AbortController();
@@ -193,12 +192,11 @@ async function sendMessage() {
             updateStreamingMessage(streamingContent, chunk);
         }
 
-        finalizeStreamingMessage(streamingContent, fullResponse);
+        finalizeStreamingMessage(streamingDiv, streamingContent, fullResponse);
     } catch (error) {
         if (error.name === 'AbortError') {
-            const streamingMessage = document.getElementById('streaming-message');
-            if (streamingMessage) {
-                streamingMessage.remove();
+            if (streamingDiv) {
+                streamingDiv.remove();
             }
         } else {
             addMessage('assistant', 'Xin lỗi, có lỗi xảy ra khi xử lý câu hỏi của bạn. Vui lòng thử lại.');

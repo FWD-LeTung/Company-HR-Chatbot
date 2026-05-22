@@ -111,6 +111,7 @@ async def stream_hr_chatbot(user_query: str, session_id: str = "default", user_i
 
     trace_handler, trace_metadata = _get_trace_config(session_id, user_id)
 
+    full_response = ""
     async for event in agent_graph.astream_events(
         {"messages": input_messages},
         version="v2",
@@ -120,7 +121,9 @@ async def stream_hr_chatbot(user_query: str, session_id: str = "default", user_i
         if kind == "on_chat_model_stream":
             content = event["data"]["chunk"].content
             if content:
+                full_response += content
                 yield content
 
     trace_handler._langfuse_client.flush()
     history.add_user_message(user_query)
+    history.add_message(AIMessage(content=full_response))
