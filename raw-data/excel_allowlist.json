@@ -1,0 +1,6 @@
+{
+  "Project_Employee_Contact_List_Updated.xlsx": {
+    "allowed_sheets": ["VP HN"],
+    "allowed_columns": ["Full name","Giới tính","Ngày tháng năm sinh","Chức danh tiếng Việt","ĐT Di Động", "Email công ty"] 
+  }
+}
