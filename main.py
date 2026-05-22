@@ -1,8 +1,11 @@
 import secrets
+import os
+from pathlib import Path
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 from typing import AsyncGenerator
 
@@ -95,8 +98,13 @@ async def chat_stream(request: ChatRequest, credentials: HTTPBasicCredentials = 
         media_type="text/event-stream"
     )
 
+# Serve frontend static files (must be after all API routes)
+frontend_dir = Path(__file__).parent / "source" / "frontend"
+if frontend_dir.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+
 
 if __name__ == "__main__":
     import uvicorn
-    # Sửa "source.main:app" hoặc biến `app` thành chuỗi "main:app"
-    uvicorn.run("main:app", host=settings.HOST, port=settings.PORT, reload=True)
+    port = int(os.environ.get("PORT", settings.PORT))
+    uvicorn.run("main:app", host=settings.HOST, port=port, reload=True)

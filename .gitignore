@@ -1,4 +1,6 @@
-raw-data/
+raw-data/*.pdf
+raw-data/*.docx
+raw-data/*.md
 .venv/
 .env
 .cache/

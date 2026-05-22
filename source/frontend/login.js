@@ -1,5 +1,5 @@
 // Configuration
-const API_URL = 'http://localhost:8000/api/v1/auth/verify';
+const API_URL = `${window.location.origin}/api/v1/auth/verify`;
 const CREDENTIALS_KEY = 'hr_chatbot_credentials';
 
 // DOM Elements
