@@ -2,7 +2,7 @@
 
 # HR Chatbot
 
-HR Chatbot là trợ lý nội bộ cho phòng Nhân sự, hỗ trợ hỏi đáp chính sách HR và tra cứu danh bạ nhân viên. Hệ thống gồm backend FastAPI, giao diện chat tĩnh, RAG với Qdrant + OpenAI, và agent LangChain để chọn đúng công cụ tra cứu.
+HR Chatbot là trợ lý nội bộ cho phòng Nhân sự, hỗ trợ hỏi đáp chính sách HR và tra cứu danh bạ nhân viên. Hệ thống gồm backend FastAPI, giao diện chat tĩnh, RAG với Qdrant + OpenAI, và LangChain để chọn đúng công cụ tra cứu.
 
 ## Tổng quan
 
