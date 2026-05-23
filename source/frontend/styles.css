@@ -100,7 +100,12 @@ body {
 .sidebar-header {
     margin-bottom: 24px;
 }
-
+.app-logo {
+    max-width: 100%;      
+    height: auto;         
+    max-height: 48px;    
+    display: block;    
+}
 .app-title {
     font-size: 28px;
     font-weight: 800;
