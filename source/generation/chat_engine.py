@@ -127,30 +127,37 @@ async def stream_hr_chatbot(user_query: str, session_id: str = "default", user_i
 
     trace_handler, trace_metadata = _get_trace_config(session_id, user_id)
 
-    # Run agent and collect final output
-    final_output = None
+    # Add user message to history
+    history.add_user_message(user_query)
 
-    # Astream trả về iterator over state updates, không phải events
+    # Track messages to save (tool calls, tool results, AI response)
+    messages_to_save = []
+    response_content = ""
+
+    # Astream trả về iterator over state updates
     async for state_update in agent_graph.astream(
-        {"messages": messages + [HumanMessage(content=user_query)]},
+        {"messages": history.messages},
         config={"callbacks": [trace_handler], "metadata": trace_metadata, "configurable": {"thread_id": session_id}},
     ):
         if "messages" in state_update:
-            final_output = state_update
-            # Stream new messages
+            # Stream và collect messages mới được tạo
             for msg in state_update["messages"]:
-                if hasattr(msg, 'content') and isinstance(msg.content, str):
+                msg_type = type(msg).__name__
+
+                # Stream AI response content cho user
+                if msg_type == "AIMessage" and hasattr(msg, 'content') and isinstance(msg.content, str):
                     yield msg.content
+                    response_content += msg.content
+
+                # Collect messages để lưu vào history
+                if msg_type in ("AIMessage", "ToolMessage"):
+                    messages_to_save.append(msg)
 
     trace_handler._langfuse_client.flush()
 
-    # Lưu user message
-    history.add_user_message(user_query)
-
-    # Lưu tất cả messages từ output (bao gồm tool calls, tool results, AI response)
-    if final_output and "messages" in final_output:
-        for msg in final_output["messages"]:
-            print(f"[DEBUG] Saving message to history: type={type(msg).__name__}, content_preview={str(msg.content)[:100] if hasattr(msg, 'content') and isinstance(msg.content, str) else 'N/A'}")
-            history.add_message(msg)
+    # Lưu messages được tạo (tool calls, tool results, AI response)
+    for msg in messages_to_save:
+        print(f"[DEBUG] Saving message to history: type={type(msg).__name__}")
+        history.add_message(msg)
 
     print(f"[DEBUG] After processing - History length: {len(history.messages)}")
