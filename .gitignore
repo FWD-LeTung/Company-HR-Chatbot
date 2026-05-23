@@ -6,3 +6,4 @@ raw-data/*.md
 .cache/
 .claude/
 __pycache__/
+reports/

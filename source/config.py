@@ -13,7 +13,9 @@ class Settings(BaseSettings):
     QDRANT_URL: str
     COLLECTION_NAME: str = "hr_policies_openai"
 
-    MAX_CHAT_HISTORY_MESSAGES: int = 6 
+    # Số tối đa turn hội thoại giữ lại (1 turn = user message + AI response + tool calls + tool results)
+    # 6 turns ~ 24-30 messages
+    MAX_CHAT_HISTORY_MESSAGES: int = 30
     API_USERNAME: str
     API_PASSWORD: str
     QDRANT_API_KEY: str

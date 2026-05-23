@@ -7,7 +7,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langchain.agents import create_agent
 from langchain_core.chat_history import InMemoryChatMessageHistory
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -116,35 +116,41 @@ async def stream_hr_chatbot(user_query: str, session_id: str = "default", user_i
     history = get_session_history(session_id)
     messages = history.messages
 
+    print(f"[DEBUG] Before processing - History length: {len(messages)}")
+
+    # Quản lý chat history - giữ nguyên order của conversation flow
     if len(messages) > settings.MAX_CHAT_HISTORY_MESSAGES:
+        print(f"[DEBUG] Truncating history from {len(messages)} to {settings.MAX_CHAT_HISTORY_MESSAGES}")
         history.clear()
         for msg in messages[-settings.MAX_CHAT_HISTORY_MESSAGES:]:
             history.add_message(msg)
 
-    chat_history = []
-    for msg in history.messages:
-        if isinstance(msg, HumanMessage):
-            chat_history.append(msg)
-        elif isinstance(msg, AIMessage):
-            chat_history.append(msg)
-
-    input_messages = chat_history + [HumanMessage(content=user_query)]
-
     trace_handler, trace_metadata = _get_trace_config(session_id, user_id)
 
-    full_response = ""
-    async for event in agent_graph.astream_events(
-        {"messages": input_messages},
-        version="v2",
-        config={"callbacks": [trace_handler], "metadata": trace_metadata},
+    # Run agent and collect final output
+    final_output = None
+
+    # Astream trả về iterator over state updates, không phải events
+    async for state_update in agent_graph.astream(
+        {"messages": messages + [HumanMessage(content=user_query)]},
+        config={"callbacks": [trace_handler], "metadata": trace_metadata, "configurable": {"thread_id": session_id}},
     ):
-        kind = event["event"]
-        if kind == "on_chat_model_stream":
-            content = event["data"]["chunk"].content
-            if content:
-                full_response += content
-                yield content
+        if "messages" in state_update:
+            final_output = state_update
+            # Stream new messages
+            for msg in state_update["messages"]:
+                if hasattr(msg, 'content') and isinstance(msg.content, str):
+                    yield msg.content
 
     trace_handler._langfuse_client.flush()
+
+    # Lưu user message
     history.add_user_message(user_query)
-    history.add_message(AIMessage(content=full_response))
+
+    # Lưu tất cả messages từ output (bao gồm tool calls, tool results, AI response)
+    if final_output and "messages" in final_output:
+        for msg in final_output["messages"]:
+            print(f"[DEBUG] Saving message to history: type={type(msg).__name__}, content_preview={str(msg.content)[:100] if hasattr(msg, 'content') and isinstance(msg.content, str) else 'N/A'}")
+            history.add_message(msg)
+
+    print(f"[DEBUG] After processing - History length: {len(history.messages)}")
