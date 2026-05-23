@@ -41,3 +41,25 @@
 41.	nghỉ việc trả laptop
 42.	thông tin nam
 43.	thông tin liên hệ của IT helpdesk
+
+Viết tài liệu cho sản phẩm:
+1. Pipelien xử lý dữ liệu và lưu trữ
+- Cách xử lý load (PDF,word, markdown, excel), chunking, indexing, metadata
+- Mô hình embedding là gì, chi phí?
+- Nơi lưu trữ vector store
+2. Core AI (RAG, tool, chatbot) 
+- Model chọn, lý do chọn
+- Model LLM là gì, chi phí
+- Cách search trong vector store
+- Các tool được tạo
+- Cách tạo ra system prompt (rule, constraint giúp mô hình không bịa)
+3. Back end
+- Tóm tắt các công nghệ quan trọng sử dụng trong back end
+4. Front end
+- Tóm tắt tổng thể front end, layout, màu sắc, bố cục
+5. Deployment and monitoring
+- deploy bằng docker, render
+- monitor bằng langfuse
+phần này viết ngắn gọn, lý do tại sao lựa chọn, chi phí
+
+Format: Output thành file markdown reports/solution_design.md

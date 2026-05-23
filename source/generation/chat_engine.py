@@ -1,15 +1,14 @@
 import sys
 import os
 from pathlib import Path
-from collections import defaultdict
 
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langchain.agents import create_agent
-from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from pydantic import BaseModel, Field
 from typing import Optional
+from langgraph.checkpoint.memory import MemorySaver
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from source.retrieval.search_engine import search_hr_policies
@@ -33,12 +32,6 @@ llm = ChatOpenAI(
 CURRENT_DIR = Path(__file__).parent
 AGENT_PROMPT_PATH = CURRENT_DIR / "prompts" / "agent_system_prompt.xml"
 AGENT_SYSTEM_PROMPT = AGENT_PROMPT_PATH.read_text(encoding="utf-8")
-
-_session_store = defaultdict(InMemoryChatMessageHistory)
-
-
-def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
-    return _session_store[session_id]
 
 
 class TraCuuDanhBaInput(BaseModel):
@@ -93,10 +86,13 @@ def tra_cuu_chinh_sach(query: str, source_file_filter: Optional[str] = None, cat
 
 tools = [tra_cuu_danh_ba, tra_cuu_chinh_sach]
 
+memory = MemorySaver()
+
 agent_graph = create_agent(
     model=llm,
     tools=tools,
     system_prompt=AGENT_SYSTEM_PROMPT,
+    checkpointer=memory,
 )
 
 
@@ -113,51 +109,30 @@ def _get_trace_config(session_id: str, user_id: str | None = None):
 
 
 async def stream_hr_chatbot(user_query: str, session_id: str = "default", user_id: str | None = None):
-    history = get_session_history(session_id)
-    messages = history.messages
-
-    print(f"[DEBUG] Before processing - History length: {len(messages)}")
-
-    # Quản lý chat history - giữ nguyên order của conversation flow
-    if len(messages) > settings.MAX_CHAT_HISTORY_MESSAGES:
-        print(f"[DEBUG] Truncating history from {len(messages)} to {settings.MAX_CHAT_HISTORY_MESSAGES}")
-        history.clear()
-        for msg in messages[-settings.MAX_CHAT_HISTORY_MESSAGES:]:
-            history.add_message(msg)
-
     trace_handler, trace_metadata = _get_trace_config(session_id, user_id)
 
-    # Add user message to history
-    history.add_user_message(user_query)
+    config = {
+        "callbacks": [trace_handler],
+        "metadata": trace_metadata,
+        "configurable": {"thread_id": session_id}
+    }
 
-    # Track messages to save (tool calls, tool results, AI response)
-    messages_to_save = []
-    response_content = ""
-
-    # Astream trả về iterator over state updates
+    # LangGraph astream trả về state theo từng node: {'model': {'messages': [...]}}
     async for state_update in agent_graph.astream(
-        {"messages": history.messages},
-        config={"callbacks": [trace_handler], "metadata": trace_metadata, "configurable": {"thread_id": session_id}},
+        {"messages": [("user", user_query)]},
+        config=config,
     ):
-        if "messages" in state_update:
-            # Stream và collect messages mới được tạo
-            for msg in state_update["messages"]:
+        for node_name, node_state in state_update.items():
+            if "messages" not in node_state:
+                continue
+
+            for msg in node_state["messages"]:
                 msg_type = type(msg).__name__
 
-                # Stream AI response content cho user
-                if msg_type == "AIMessage" and hasattr(msg, 'content') and isinstance(msg.content, str):
-                    yield msg.content
-                    response_content += msg.content
-
-                # Collect messages để lưu vào history
-                if msg_type in ("AIMessage", "ToolMessage"):
-                    messages_to_save.append(msg)
+                # Chỉ stream AIMessage có text content, bỏ qua tool_calls
+                if msg_type == "AIMessage":
+                    has_tool_calls = hasattr(msg, 'tool_calls') and len(msg.tool_calls) > 0
+                    if not has_tool_calls and hasattr(msg, 'content') and isinstance(msg.content, str) and msg.content:
+                        yield msg.content
 
     trace_handler._langfuse_client.flush()
-
-    # Lưu messages được tạo (tool calls, tool results, AI response)
-    for msg in messages_to_save:
-        print(f"[DEBUG] Saving message to history: type={type(msg).__name__}")
-        history.add_message(msg)
-
-    print(f"[DEBUG] After processing - History length: {len(history.messages)}")
