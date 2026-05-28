@@ -11,7 +11,7 @@ from typing import Optional
 from langgraph.checkpoint.memory import MemorySaver
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from source.retrieval.search_engine import search_hr_policies
+from source.retrieval.search_engine import search_hr_policies, hybrid_search_hr_policies
 from source.retrieval.excel_reader import search_employee_with_endswith
 from source.config import settings
 
@@ -63,11 +63,10 @@ class TraCuuChinhSachInput(BaseModel):
 
 @tool("tra_cuu_chinh_sach", args_schema=TraCuuChinhSachInput)
 def tra_cuu_chinh_sach(query: str, source_file_filter: Optional[str] = None, category_filter: Optional[str] = None) -> str:
-    """Tìm kiếm các quy định, chế độ, và chính sách nhân sự của công ty từ cơ sở tri thức (Vector DB)."""
-    
-    # Truyền thêm các bộ lọc vào hàm search_hr_policies
-    search_results = search_hr_policies(
-        query=query, 
+    """Tìm kiếm các quy định, chế độ, và chính sách nhân sự của công ty từ cơ sở tri thức (Vector DB + BM25)."""
+
+    search_results = hybrid_search_hr_policies(
+        query=query,
         top_k=3,
         source_file_filter=source_file_filter,
         category_filter=category_filter
@@ -108,6 +107,11 @@ def _get_trace_config(session_id: str, user_id: str | None = None):
     return handler, metadata
 
 
+FALLBACK_MSG = ("Tôi không có câu trả lời cho câu hỏi này. "
+                "Các thông tin về hành chính vui lòng liên hệ HR Admin Nguyễn Thị Quỳnh Anh - SĐT 0913244513. "
+                "Các thông tin về chương trình đào tạo và học tập vui lòng liên hệ HR L&D Bùi Thị Hà - SĐT 0313214512")
+
+
 async def stream_hr_chatbot(user_query: str, session_id: str = "default", user_id: str | None = None):
     trace_handler, trace_metadata = _get_trace_config(session_id, user_id)
 
@@ -117,7 +121,9 @@ async def stream_hr_chatbot(user_query: str, session_id: str = "default", user_i
         "configurable": {"thread_id": session_id}
     }
 
-    # LangGraph astream trả về state theo từng node: {'model': {'messages': [...]}}
+    tool_was_called = False
+    tool_results = {}
+
     async for state_update in agent_graph.astream(
         {"messages": [("user", user_query)]},
         config=config,
@@ -129,10 +135,28 @@ async def stream_hr_chatbot(user_query: str, session_id: str = "default", user_i
             for msg in node_state["messages"]:
                 msg_type = type(msg).__name__
 
+                # Track tool calls
+                if msg_type == "AIMessage" and hasattr(msg, 'tool_calls') and len(msg.tool_calls) > 0:
+                    tool_was_called = True
+
+                # Track tool results
+                if msg_type == "ToolMessage":
+                    tool_results[msg.name] = msg.content
+
                 # Chỉ stream AIMessage có text content, bỏ qua tool_calls
                 if msg_type == "AIMessage":
                     has_tool_calls = hasattr(msg, 'tool_calls') and len(msg.tool_calls) > 0
                     if not has_tool_calls and hasattr(msg, 'content') and isinstance(msg.content, str) and msg.content:
+                        if not tool_was_called:
+                            yield FALLBACK_MSG
+                            trace_handler._langfuse_client.flush()
+                            return
+
+                        if tool_results and all("Không tìm thấy" in r for r in tool_results.values()):
+                            yield FALLBACK_MSG
+                            trace_handler._langfuse_client.flush()
+                            return
+
                         yield msg.content
 
     trace_handler._langfuse_client.flush()

@@ -49,3 +49,58 @@ def search_hr_policies(
         return []
 
     return results
+
+
+def hybrid_search_hr_policies(
+    query: str,
+    top_k: int = 3,
+    source_file_filter: Optional[str] = None,
+    category_filter: Optional[str] = None,
+):
+    from source.retrieval.bm25_indexer import bm25_indexer
+    from langchain_core.documents import Document
+
+    # 1. Vector search
+    vector_results = search_hr_policies(
+        query=query,
+        top_k=top_k * 2,
+        source_file_filter=source_file_filter,
+        category_filter=category_filter,
+    )
+
+    # 2. BM25 search
+    try:
+        bm25_raw = bm25_indexer.search(query, top_k=top_k * 2)
+    except FileNotFoundError:
+        print("[Hybrid] BM25 index not found, falling back to vector-only search.")
+        return vector_results[:top_k]
+
+    bm25_results = []
+    for item in bm25_raw:
+        doc = Document(page_content=item["text"], metadata=item["metadata"])
+        bm25_results.append((doc, item["score"]))
+
+    # 3. RRF fusion
+    k = 60
+    fused_scores: dict[str, float] = {}
+    all_docs: dict[str, Document] = {}
+
+    for rank, (doc, _score) in enumerate(vector_results, 1):
+        doc_id = doc.metadata.get("chunk_id", id(doc))
+        fused_scores[doc_id] = fused_scores.get(doc_id, 0) + 1 / (k + rank)
+        all_docs[doc_id] = doc
+
+    for rank, (doc, _score) in enumerate(bm25_results, 1):
+        doc_id = doc.metadata.get("chunk_id", id(doc))
+        fused_scores[doc_id] = fused_scores.get(doc_id, 0) + 1 / (k + rank)
+        if doc_id not in all_docs:
+            all_docs[doc_id] = doc
+
+    sorted_ids = sorted(fused_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+
+    final_results = []
+    for doc_id, fusion_score in sorted_ids:
+        doc = all_docs[doc_id]
+        final_results.append((doc, fusion_score))
+
+    return final_results
