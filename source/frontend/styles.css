@@ -419,11 +419,21 @@ body {
 
 /* Quick Questions */
 
+.quick-questions-header {
+    padding: 8px 32px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
+}
+
+.quick-questions {
+
 .quick-questions {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
-    padding: 8px 32px 24px;
+    padding: 4px 32px 24px;
     animation: fadeIn 0.4s ease;
 }
 
@@ -670,6 +680,10 @@ body {
 
     .chat-messages {
         padding: 20px;
+    }
+
+    .quick-questions-header {
+        padding: 8px 20px 0;
     }
 
     .quick-questions {
