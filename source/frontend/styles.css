@@ -263,6 +263,7 @@ body {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    min-height: 0;
 }
 
 .chat-messages {
@@ -426,8 +427,6 @@ body {
     color: var(--text-secondary);
     letter-spacing: 0.3px;
 }
-
-.quick-questions {
 
 .quick-questions {
     display: grid;
