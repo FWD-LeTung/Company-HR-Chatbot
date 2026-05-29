@@ -20,6 +20,7 @@ const menuToggle = document.getElementById('menuToggle');
 const sidebar = document.getElementById('sidebar');
 const newChatBtn = document.getElementById('newChatBtn');
 const logoutBtn = document.getElementById('logoutBtn');
+const quickQuestions = document.getElementById('quickQuestions');
 
 // Credentials Management
 function getCredentials() {
@@ -81,6 +82,9 @@ function createNewChat() {
     localStorage.setItem(SESSION_STORAGE_KEY, currentSessionId);
     chatMessages.innerHTML = '';
     addMessage('assistant', 'Xin chào! Tôi là Trợ lý Nhân sự của công ty. Tôi có thể giúp gì cho bạn?');
+    if (quickQuestions) {
+        quickQuestions.classList.remove('hidden');
+    }
 }
 
 function addMessage(role, content) {
@@ -127,7 +131,8 @@ function finalizeStreamingMessage(messageDiv, contentDiv, fullContent) {
 }
 
 function scrollToBottom() {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    const wrapper = chatMessages.parentElement;
+    wrapper.scrollTop = wrapper.scrollHeight;
 }
 
 // API Communication
@@ -140,6 +145,7 @@ async function sendMessage() {
     messageInput.value = '';
     messageInput.style.height = 'auto';
     sendBtn.disabled = true;
+    hideQuickQuestions();
 
     isStreaming = true;
     typingIndicator.style.display = 'block';
@@ -259,6 +265,23 @@ function autoResizeTextarea() {
     messageInput.style.height = 'auto';
     messageInput.style.height = `${Math.min(messageInput.scrollHeight, 120)}px`;
 }
+
+function hideQuickQuestions() {
+    if (quickQuestions) {
+        quickQuestions.classList.add('hidden');
+    }
+}
+
+// Quick Questions
+document.querySelectorAll('.quick-question-card').forEach(card => {
+    card.addEventListener('click', () => {
+        const question = card.getAttribute('data-question');
+        messageInput.value = question;
+        sendBtn.disabled = false;
+        autoResizeTextarea();
+        sendMessage();
+    });
+});
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {

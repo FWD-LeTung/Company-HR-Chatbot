@@ -11,7 +11,7 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <img src="logo.jpg" alt="SVTECH Logo" style="width: 100%; max-width: 220px; height: auto; object-fit: contain; display: block;">
+                <img src="logo.png" alt="SVTECH Logo" style="width: 100%; max-width: 220px; height: auto; object-fit: contain; display: block; margin: 0 auto;">
             </div>
             <button class="btn-new-chat" id="newChatBtn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -52,10 +52,50 @@
                     <span>Đăng xuất</span>
                 </button>
             </div>
-            <div class="chat-messages" id="chatMessages">
-                <div class="message assistant">
-                    <div class="message-content">
-                        <p>Xin chào! Tôi là Trợ lý Nhân sự (Ask HR) của SVTECH. Tôi có thể giúp gì cho bạn?</p>
+            <div class="chat-messages-wrapper">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message assistant">
+                        <div class="message-content">
+                            <p>Xin chào! Tôi là Trợ lý Nhân sự (Ask HR) của SVTECH. Tôi có thể giúp gì cho bạn?</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="quick-questions" id="quickQuestions">
+                    <div class="quick-question-card" data-question="Cho tôi biết nội quy lao động về thời gian làm việc">
+                        <div class="quick-question-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <div class="quick-question-text">
+                            <div class="quick-question-title">Nội quy lao động</div>
+                            <div class="quick-question-desc">Thời gian làm việc</div>
+                        </div>
+                    </div>
+                    <div class="quick-question-card" data-question="Quy định nghỉ phép của công ty như thế nào?">
+                        <div class="quick-question-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        </div>
+                        <div class="quick-question-text">
+                            <div class="quick-question-title">Nghỉ phép</div>
+                            <div class="quick-question-desc">Quy định về việc nghỉ phép</div>
+                        </div>
+                    </div>
+                    <div class="quick-question-card" data-question="Quy định về lưu trú và di chuyển khi đi công tác như thế nào?">
+                        <div class="quick-question-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M3 12h9"/><path d="M12 3a7.5 7.5 0 0 0 0 18"/></svg>
+                        </div>
+                        <div class="quick-question-text">
+                            <div class="quick-question-title">Công tác</div>
+                            <div class="quick-question-desc">Quy định lưu trú và di chuyển</div>
+                        </div>
+                    </div>
+                    <div class="quick-question-card" data-question="Chính sách công đoàn của công ty như thế nào?">
+                        <div class="quick-question-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </div>
+                        <div class="quick-question-text">
+                            <div class="quick-question-title">Công đoàn</div>
+                            <div class="quick-question-desc">Chính sách công đoàn</div>
+                        </div>
                     </div>
                 </div>
             </div>
