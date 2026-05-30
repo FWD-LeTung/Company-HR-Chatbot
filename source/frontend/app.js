@@ -21,6 +21,7 @@ const sidebar = document.getElementById('sidebar');
 const newChatBtn = document.getElementById('newChatBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const quickQuestions = document.getElementById('quickQuestions');
+const quickQuestionsHeader = document.querySelector('.quick-questions-header');
 
 // Credentials Management
 function getCredentials() {
@@ -82,9 +83,7 @@ function createNewChat() {
     localStorage.setItem(SESSION_STORAGE_KEY, currentSessionId);
     chatMessages.innerHTML = '';
     addMessage('assistant', 'Xin chào! Tôi là Trợ lý Nhân sự của công ty. Tôi có thể giúp gì cho bạn?');
-    if (quickQuestions) {
-        quickQuestions.classList.remove('hidden');
-    }
+    setQuickQuestionsVisible(true);
 }
 
 function addMessage(role, content) {
@@ -141,18 +140,21 @@ async function sendMessage() {
 
     if (!message || isStreaming) return;
 
+    hideQuickQuestions();
     addMessage('user', message);
     messageInput.value = '';
     messageInput.style.height = 'auto';
     sendBtn.disabled = true;
-    hideQuickQuestions();
 
     isStreaming = true;
     typingIndicator.style.display = 'block';
     stopBtn.style.display = 'flex';
 
+    let streamingDiv = null;
+
     try {
-        const { messageDiv: streamingDiv, contentDiv: streamingContent } = addStreamingMessage();
+        const { messageDiv, contentDiv: streamingContent } = addStreamingMessage();
+        streamingDiv = messageDiv;
         let fullResponse = '';
 
         currentController = new AbortController();
@@ -266,10 +268,18 @@ function autoResizeTextarea() {
     messageInput.style.height = `${Math.min(messageInput.scrollHeight, 120)}px`;
 }
 
+function setQuickQuestionsVisible(isVisible) {
+    [quickQuestionsHeader, quickQuestions].forEach(element => {
+        if (!element) return;
+
+        element.hidden = !isVisible;
+        element.classList.toggle('hidden', !isVisible);
+        element.setAttribute('aria-hidden', String(!isVisible));
+    });
+}
+
 function hideQuickQuestions() {
-    if (quickQuestions) {
-        quickQuestions.classList.add('hidden');
-    }
+    setQuickQuestionsVisible(false);
 }
 
 // Quick Questions

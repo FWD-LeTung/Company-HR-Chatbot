@@ -420,12 +420,22 @@ body {
 
 /* Quick Questions */
 
+.quick-questions-header[hidden],
+.quick-questions-header.hidden {
+    display: none !important;
+}
+
 .quick-questions-header {
     padding: 8px 32px 0;
     font-size: 13px;
     font-weight: 600;
     color: var(--text-secondary);
     letter-spacing: 0.3px;
+    animation: fadeIn 0.4s ease;
+}
+
+.quick-questions-header.hidden {
+    display: none !important;
 }
 
 .quick-questions {
