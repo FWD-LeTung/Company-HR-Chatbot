@@ -13,6 +13,7 @@ from langgraph.checkpoint.memory import MemorySaver
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from source.retrieval.search_engine import search_hr_policies, hybrid_search_hr_policies
 from source.retrieval.excel_reader import search_employee_with_endswith
+from source.retrieval.phone_allowance_reader import get_phone_allowance_table
 from source.config import settings
 
 from langfuse.langchain import CallbackHandler
@@ -65,6 +66,12 @@ class TraCuuChinhSachInput(BaseModel):
 def tra_cuu_chinh_sach(query: str, source_file_filter: Optional[str] = None, category_filter: Optional[str] = None) -> str:
     """Tìm kiếm các quy định, chế độ, và chính sách nhân sự của công ty từ cơ sở tri thức (Vector DB + BM25)."""
 
+
+@tool("tra_cuu_phu_cap_dien_thoai")
+def tra_cuu_phu_cap_dien_thoai() -> str:
+    """Lấy bảng quy định phụ cấp điện thoại chi tiết theo Department và Level của nhân viên."""
+    return f"### Quy định Phụ cấp Điện thoại\n\n{get_phone_allowance_table()}"
+
     search_results = hybrid_search_hr_policies(
         query=query,
         top_k=3,
@@ -83,7 +90,7 @@ def tra_cuu_chinh_sach(query: str, source_file_filter: Optional[str] = None, cat
     return "\n\n".join(context_blocks)
 
 
-tools = [tra_cuu_danh_ba, tra_cuu_chinh_sach]
+tools = [tra_cuu_danh_ba, tra_cuu_chinh_sach, tra_cuu_phu_cap_dien_thoai]
 
 memory = MemorySaver()
 
